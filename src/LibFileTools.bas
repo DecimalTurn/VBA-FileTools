@@ -36,6 +36,7 @@ Attribute VB_Name = "LibFileTools"
 '' No extra library references are needed (e.g. Microsoft Scripting Runtime)
 ''
 '' Public/Exposed methods:
+''    - AppendBytes
 ''    - BrowseForFiles           (Windows only)
 ''    - BrowseForFolder          (Windows only)
 ''    - BuildPath
@@ -66,6 +67,7 @@ Attribute VB_Name = "LibFileTools"
 ''    - MoveFolder
 ''    - ParentFolder
 ''    - ReadBytes
+''    - WriteBytes
 '*******************************************************************************
 
 Option Explicit
@@ -3270,6 +3272,7 @@ Public Function IsFile(ByRef filePath As String) As Boolean
     End If
     On Error GoTo 0
 End Function
+
 '*******************************************************************************
 'Checks if a path indicates a folder path
 'Note that if C:\Test\Demo is valid then C:\Test\\///Demo will also be valid
@@ -3427,7 +3430,7 @@ Public Sub ReadBytes(ByRef filePath As String, ByRef result() As Byte)
         Exit Sub
     End If
     '
-    Dim fileNumber As Long: fileNumber = FreeFile()
+    Dim fileNumber As Integer: fileNumber = FreeFile()
     '
     Open filePath For Binary Access Read As #fileNumber
     Dim size As Long: size = LOF(fileNumber)
@@ -3437,6 +3440,38 @@ Public Sub ReadBytes(ByRef filePath As String, ByRef result() As Byte)
     Else
         Erase result
     End If
+    Close #fileNumber
+End Sub
+
+'*******************************************************************************
+'Write an array of Bytes to a file. Overwrites existing file by default
+'*******************************************************************************
+Public Sub WriteBytes(ByRef filePath As String, ByRef bytes() As Byte _ 
+                    , Optional ByVal failIfExists As Boolean = False)
+    If failIfExists And IsFile(filePath) Then Exit Sub
+    '
+    Dim fileNumber As Integer: fileNumber = FreeFile()
+    '
+    Open filePath For Binary Access Write As #fileNumber
+    Put #fileNumber, 1, bytes
+    Close #fileNumber
+End Sub
+
+'*******************************************************************************
+'Append an array of Bytes to a file
+'*******************************************************************************
+Public Sub AppendBytes(ByRef filePath As String, ByRef bytes() As Byte _ 
+                     , Optional ByVal createIfMissing As Boolean = True)
+    If Not IsFile(filePath) Then
+        If Not createIfMissing Then Exit Sub
+        WriteBytes filePath, bytes
+        Exit Sub
+    End If
+    '
+    Dim fileNumber As Integer: fileNumber = FreeFile()
+    '
+    Open filePath For Binary Access Write As #fileNumber
+    Put #fileNumber, LOF(fileNumber) + 1, bytes
     Close #fileNumber
 End Sub
 
